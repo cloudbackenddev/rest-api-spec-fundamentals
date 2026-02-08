@@ -134,12 +134,47 @@ erDiagram
 
 ---
 
-## Example 2: Library Management System (Explained)
+## Example 2: Library Management System (Exercise)
 
 ### Use Case
 Build an API for a library where members can search books, borrow items, and manage their account.
 
 ### Step 1: Identify Resources
+*Think about the entities involved in a library system.*
+
+| Resource | Description |
+|----------|-------------|
+| ? | ? |
+| ? | ? |
+| ? | ? |
+
+### Step 2: Define Relationships
+*How do books, copies, and members relate to each other?*
+
+### Step 3: Design Endpoints
+
+#### Books & Copies
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| ? | ? | ? |
+| ? | ? | ? |
+
+#### Loans
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| ? | ? | ? |
+
+### Step 4: Sample Request/Response
+*Draft a JSON payload for borrowing a book.*
+
+---
+
+<details>
+<summary>📖 Click to reveal Solution</summary>
+
+### Solution: Library Management System
+
+#### Resources Identified
 
 | Resource | Description |
 |----------|-------------|
@@ -149,7 +184,7 @@ Build an API for a library where members can search books, borrow items, and man
 | **Loans** | Active/historical borrowing records |
 | **Reservations** | Book reservations when all copies are out |
 
-### Step 2: Define Relationships
+#### Relationships
 
 ```mermaid
 erDiagram
@@ -160,9 +195,9 @@ erDiagram
     Book ||--o{ Reservation : "is reserved"
 ```
 
-### Step 3: Design Endpoints
+#### Endpoints
 
-#### Books & Copies
+**Books & Copies**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/books` | Search/list books (?q=python&available=true) |
@@ -170,7 +205,7 @@ erDiagram
 | GET | `/books/{isbn}/copies` | List copies of a book |
 | GET | `/books/{isbn}/copies/{copyId}` | Get specific copy status |
 
-#### Loans
+**Loans**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/members/{id}/loans` | Get member's active loans |
@@ -178,14 +213,14 @@ erDiagram
 | PATCH | `/loans/{id}/return` | Return a book |
 | PATCH | `/loans/{id}/renew` | Extend loan period |
 
-#### Reservations
+**Reservations**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/members/{id}/reservations` | Get member's reservations |
 | POST | `/reservations` | Reserve a book |
 | DELETE | `/reservations/{id}` | Cancel reservation |
 
-### Step 4: Sample Request/Response
+#### Sample Request/Response
 
 **POST /loans** - Borrow a Book
 ```json
@@ -220,7 +255,7 @@ erDiagram
 }
 ```
 
-### Key Design Decisions
+#### Key Design Decisions
 
 | Decision | Rationale |
 |----------|-----------|
@@ -228,6 +263,8 @@ erDiagram
 | `/loans/{id}/return` action | State change, not a full resource update |
 | ISBN as book identifier | Standard identifier for books |
 | Member nested under `/members/{id}/loans` | Loans belong to a member |
+
+</details>
 
 ---
 

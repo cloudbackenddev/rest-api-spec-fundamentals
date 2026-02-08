@@ -304,7 +304,7 @@ GET /users/42/orders
 
 **Try it yourself (curl):**
 ```bash
-curl -X GET "https://api.example.com/users/42"
+curl -k -X GET "https://reqres.in/api/users/2"
 ```
 
 **Interactive Question:**
@@ -342,7 +342,7 @@ GET /products?category=electronics&brand=Sony&sort=price&order=desc
 
 **Try it yourself (curl):**
 ```bash
-curl -X GET "https://api.example.com/products?category=electronics&limit=10"
+curl -k -X GET "https://dummyjson.com/products?category=smartphones&limit=10"
 ```
 
 **Interactive Question:**
@@ -893,253 +893,17 @@ Many frameworks can generate OpenAPI specs from your code:
 
 ---
 
-## 15. Testing REST APIs
+## 15. Testing & Hands-On Labs
 
-### Tools for Testing:
+For practical exercises, including a **curl Cheatsheet** and **HTTPBin Laboratory**, please refer to the separate guide:
 
-| Tool | Use Case |
-|------|----------|
-| **curl** | Command-line testing |
-| **Postman** | GUI-based testing with collections |
-| **Insomnia** | Lightweight alternative to Postman |
-| **HTTPie** | Human-friendly curl alternative |
+👉 **[REST API Tools & Labs](REST_API_TOOLS_AND_LABS.md)**
 
-### curl Cheatsheet:
-
-> 💡 **Tip:** Use `-v` (verbose) to see request/response headers for debugging!
-
-```bash
-# GET request (verbose to see headers)
-curl -v -X GET "https://api.example.com/users"
-
-# GET with headers
-curl -v -X GET "https://api.example.com/users" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-
-# POST with JSON body
-curl -v -X POST "https://api.example.com/users" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Alice", "email": "alice@example.com"}'
-
-# PUT (update)
-curl -v -X PUT "https://api.example.com/users/42" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Alice Updated"}'
-
-# DELETE
-curl -v -X DELETE "https://api.example.com/users/42"
-
-# See response headers only (use -i instead of -v for cleaner output)
-curl -i "https://api.example.com/users"
-
-# Follow redirects
-curl -v -L "https://api.example.com/redirect"
-```
-
-### ⚠️ Windows (PowerShell/CMD) Users:
-Single quotes don't work the same on Windows! Use escaped double quotes instead:
-
-```powershell
-# POST with JSON body (Windows)
-curl -v -X POST "https://api.example.com/users" -H "Content-Type: application/json" -d "{\"name\": \"Alice\", \"email\": \"alice@example.com\"}"
-
-# PUT (Windows)
-curl -v -X PUT "https://api.example.com/users/42" -H "Content-Type: application/json" -d "{\"name\": \"Alice Updated\"}"
-```
-
-**Alternative: Use a JSON file**
-```powershell
-# Create data.json with your JSON, then:
-curl -v -X POST "https://api.example.com/users" -H "Content-Type: application/json" -d @data.json
-```
-
-| Shell | JSON Quoting |
-|-------|--------------|
-| Linux/Mac (bash) | `'{"key": "value"}'` |
-| Windows (PowerShell) | `"{\"key\": \"value\"}"` |
-
-**Interactive Exercise:**
-> Write a curl command to create a new product with `name: "Laptop"` and `price: 999.99`.
-> **Answer (Linux/Mac):**
-> ```bash
-> curl -X POST "https://api.example.com/products" \
->   -H "Content-Type: application/json" \
->   -d '{"name": "Laptop", "price": 999.99}'
-> ```
-> **Answer (Windows):**
-> ```powershell
-> curl -X POST "https://api.example.com/products" -H "Content-Type: application/json" -d "{\"name\": \"Laptop\", \"price\": 999.99}"
-> ```
-
----
-
-## 16. Hands-On Exercises with HTTPBin
-[httpbin.org](https://httpbin.org) is a free public API for testing HTTP requests. Use it to practice everything you've learned!
-
-### What is HTTPBin?
-HTTPBin echoes back whatever you send it, making it perfect for learning and debugging.
-
-### Exercise 1: Basic GET Request
-```bash
-curl -v -X GET "https://httpbin.org/get"
-```
-**What to observe:** The `-v` flag shows request/response headers, origin IP, and URL.
-
----
-
-### Exercise 2: GET with Query Parameters
-```bash
-curl -v -X GET "https://httpbin.org/get?name=Alice&role=developer"
-```
-**Task:** Find the `args` object in the response. What does it contain?
-
----
-
-### Exercise 3: POST with JSON Body
-```bash
-curl -v -X POST "https://httpbin.org/post" \
-  -H "Content-Type: application/json" \
-  -d '{"username": "john", "email": "john@example.com"}'
-```
-**Task:** Find your JSON data in the `json` field of the response.
-
----
-
-### Exercise 4: Custom Headers
-```bash
-curl -v -X GET "https://httpbin.org/headers" \
-  -H "Authorization: Bearer my-secret-token" \
-  -H "X-Custom-Header: HelloWorld"
-```
-**Task:** Verify your custom headers appear in the response.
-
----
-
-### Exercise 5: HTTP Methods
-Try different methods and observe the responses:
-```bash
-# PUT
-curl -v -X PUT "https://httpbin.org/put" -d "data=updated"
-
-# PATCH
-curl -v -X PATCH "https://httpbin.org/patch" -d "field=patched"
-
-# DELETE
-curl -v -X DELETE "https://httpbin.org/delete"
-```
-
----
-
-### Exercise 6: Status Codes
-HTTPBin can return any status code you want:
-```bash
-# Get a 404 response
-curl -i "https://httpbin.org/status/404"
-
-# Get a 500 response
-curl -i "https://httpbin.org/status/500"
-
-# Get a 201 response
-curl -i "https://httpbin.org/status/201"
-```
-**Task:** Try status codes 200, 301, 401, 403, 429, and 503. Observe the responses.
-
----
-
-### Exercise 7: Response Headers
-See custom response headers:
-```bash
-curl -i "https://httpbin.org/response-headers?X-Custom=MyValue&Cache-Control=no-cache"
-```
-
----
-
-### Exercise 8: Delayed Response (Simulating Slow APIs)
-```bash
-# Wait 3 seconds before response
-curl -v "https://httpbin.org/delay/3"
-```
-**Use case:** Test timeout handling in your client code.
-
----
-
-### Exercise 9: Basic Authentication
-```bash
-curl -v -u "myuser:mypassword" "https://httpbin.org/basic-auth/myuser/mypassword"
-```
-**Task:** Try with wrong credentials and observe the 401 response.
-
----
-
-### Exercise 10: Redirects
-```bash
-# Follow redirects
-curl -v -L "https://httpbin.org/redirect/3"
-
-# See redirect without following
-curl -v -i "https://httpbin.org/redirect/1"
-```
-
----
-
-### Challenge Exercises:
-
-**Challenge 1:** Send a POST request to `https://httpbin.org/post` with:
-- Header: `Content-Type: application/json`
-- Header: `Authorization: Bearer abc123`
-- Body: `{"product": "Laptop", "price": 999}`
-
-<details>
-<summary>Solution</summary>
-
-```bash
-curl -v -X POST "https://httpbin.org/post" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer abc123" \
-  -d '{"product": "Laptop", "price": 999}'
-```
-</details>
-
-**Challenge 2:** Make a request that returns a 429 status code and includes a `Retry-After` header.
-
-<details>
-<summary>Solution</summary>
-
-```bash
-curl -i "https://httpbin.org/status/429"
-```
-</details>
-
-**Challenge 3:** Use HTTPBin to test what happens when a server takes 5 seconds to respond.
-
-<details>
-<summary>Solution</summary>
-
-```bash
-curl -v "https://httpbin.org/delay/5"
-```
-</details>
-
----
-
-### HTTPBin Endpoints Reference:
-
-| Endpoint | Description |
-|----------|-------------|
-| `/get` | Returns GET data |
-| `/post` | Returns POST data |
-| `/put` | Returns PUT data |
-| `/patch` | Returns PATCH data |
-| `/delete` | Returns DELETE data |
-| `/status/{code}` | Returns given status code |
-| `/headers` | Returns request headers |
-| `/ip` | Returns origin IP |
-| `/user-agent` | Returns user-agent |
-| `/delay/{n}` | Delays response by n seconds |
-| `/basic-auth/{user}/{pass}` | Tests HTTP Basic Auth |
-| `/redirect/{n}` | Redirects n times |
-| `/cookies` | Returns cookies |
-| `/cookies/set?name=value` | Sets cookies |
+This guide covers:
+- Tools for testing (curl, Postman, etc.)
+- A comprehensive curl cheatsheet
+- 10 Hands-on exercises using HTTPBin
+- Challenge scenarios
 
 ---
 
