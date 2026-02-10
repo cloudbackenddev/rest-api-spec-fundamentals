@@ -837,39 +837,12 @@ Retry-After: 60
 ---
 
 ## 13. CORS (Cross-Origin Resource Sharing)
-CORS is essential when your API is consumed by browser-based JavaScript applications.
 
-### What is CORS?
-Browsers block requests from one origin (e.g., `https://frontend.com`) to a different origin (e.g., `https://api.backend.com`) unless the server explicitly allows it.
+CORS is a mechanism that allows restricted resources on a web page to be requested from another domain outside the domain from which the first resource was served.
 
-### CORS Headers:
-```http
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: https://frontend.com
-Access-Control-Allow-Methods: GET, POST, PUT, DELETE
-Access-Control-Allow-Headers: Content-Type, Authorization
-Access-Control-Max-Age: 86400
-```
-
-| Header | Description |
-|--------|-------------|
-| `Access-Control-Allow-Origin` | Which origins can access (use `*` for public APIs) |
-| `Access-Control-Allow-Methods` | Allowed HTTP methods |
-| `Access-Control-Allow-Headers` | Allowed custom headers |
-| `Access-Control-Max-Age` | How long to cache preflight response (seconds) |
-
-### Preflight Request (OPTIONS):
-For non-simple requests (e.g., with custom headers), browsers send a preflight:
-```http
-OPTIONS /api/users HTTP/1.1
-Origin: https://frontend.com
-Access-Control-Request-Method: POST
-Access-Control-Request-Headers: Content-Type, Authorization
-```
-
-**Interactive Question:**
-> Your React app on `localhost:3000` can't call your API on `localhost:8080`. What's the issue?
-> **Answer:** CORS! Different ports = different origins. Configure your API to allow `localhost:3000`.
+> **Masterclass Available**: For a deep dive into CORS including theory, headers, and a hands-on laboratory with Python and HTML to simulate and fix CORS errors, please refer to the dedicated guide:
+>
+> 👉 **[CORS Masterclass](CORS_MASTERCLASS.md)**
 
 ---
 
