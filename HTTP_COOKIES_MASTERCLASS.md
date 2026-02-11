@@ -19,20 +19,20 @@ The communication happens via HTTP Headers:
 #### Sequence Diagram
 ```mermaid
 sequenceDiagram
-    participant Client (Browser)
+    participant Browser as Client (Browser)
     participant Server
 
-    Note over Client, Server: 1. First Request (No Cookie)
-    Client->>Server: GET /login
-    Server-->>Client: 200 OK
-    Server-->>Client: Set-Cookie: session_id=abc12345 (Secure, HttpOnly)
+    Note over Browser, Server: 1. First Request (No Cookie)
+    Browser->>Server: GET /login
+    Server-->>Browser: 200 OK
+    Server-->>Browser: Set-Cookie: session_id=abc12345 (Secure, HttpOnly)
 
-    Note over Client: Browser stores cookie: session_id=abc12345
+    Note over Browser: Browser stores cookie: session_id=abc12345
 
-    Note over Client, Server: 2. Subsequent Request (Cookie Included)
-    Client->>Server: GET /dashboard
-    Client->>Server: Cookie: session_id=abc12345
-    Server-->>Client: 200 OK (User is logged in)
+    Note over Browser, Server: 2. Subsequent Request (Cookie Included)
+    Browser->>Server: GET /dashboard
+    Browser->>Server: Cookie: session_id=abc12345
+    Server-->>Browser: 200 OK (User is logged in)
 ```
 
 ### Anatomy of a Cookie
@@ -151,10 +151,15 @@ This prevents Cross-Site Request Forgery (CSRF).
 > 2. Should it be sent over HTTP?
 > 3. What attributes must you set?
 >
+<details>
+<summary><b>Click to see the answers</b></summary>
+
 > **Answers:**
 > 1. **No**. Set `HttpOnly`.
 > 2. **No**. Set `Secure`.
 > 3. **Result**: `Set-Cookie: session_id=xyz; Secure; HttpOnly; SameSite=Strict`
+
+</details>
 
 ---
 
@@ -197,3 +202,42 @@ You can edit cookies directly in this panel!
     *   The cookie is gone.
 
 ---
+
+---
+
+## 5. Bonus: The "Untouchable" Cookie Challenge
+
+This hidden exercise demonstrates the power of the `HttpOnly` flag. 
+
+<details>
+<summary><b>🕵️ Click to reveal the Secret Cookie Challenge</b></summary>
+
+### The Setup
+We will use a special endpoint that sets two cookies: one normal and one `HttpOnly`.
+
+1.  **Open this URL in your browser**:
+    [https://httpbin.org/response-headers?Set-Cookie=secret_val%3Dantigravity%3B%20HttpOnly&Set-Cookie=normal_val%3Dvisible](https://httpbin.org/response-headers?Set-Cookie=secret_val%3Dantigravity%3B%20HttpOnly&Set-Cookie=normal_val%3Dvisible)
+2.  Open **DevTools** (**F12**) and go to the **Application** tab -> **Cookies** -> `https://httpbin.org`.
+3.  **Observe**:
+    *   `normal_val` is present.
+    *   `secret_val` is present and has a checkmark `✓` in the **HttpOnly** column.
+
+### The Attack (Client-Side Modification)
+Now, let's try to access and modify these cookies using JavaScript, just like a hacker might do via an XSS (Cross-Site Scripting) attack.
+
+1.  Switch to the **Console** tab in DevTools.
+2.  Type `document.cookie` and press **Enter**.
+    *   **Result**: You only see `"normal_val=visible"`. The `secret_val` is **invisible** to JavaScript!
+3.  Try to cheat and overwrite the secret cookie:
+    ```javascript
+    document.cookie = "secret_val=hacked";
+    ```
+4.  Type `document.cookie` again.
+    *   **Result**: It might seem like it worked (you might see `secret_val=hacked` in the console output), but look closer.
+5.  Go back to the **Application** tab -> **Cookies**.
+    *   **The Truth**: The original `secret_val` with the value `antigravity` is **still there and untouched!** The browser protected it from being modified by your script because of the `HttpOnly` flag. You may have created a *new* cookie named `secret_val`, but the sensitive one remains secure.
+
+### Why this matters
+If `secret_val` was your `session_id`, a hacker's script could NOT steal it or change it, even if they found a way to run code on your page. This is the first line of defense against session hijacking.
+
+</details>
