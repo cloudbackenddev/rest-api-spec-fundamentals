@@ -78,89 +78,90 @@ Used to verify the token hasn't been tampered with.
 
 ---
 
-## 4. Practical Lab: Accessing Google APIs
+## 4. Practical Lab: OIDC Playground & Brokered Auth
 
-We will use the **Google OAuth 2.0 Playground** to simulate a real application flow. We will get an ID Token (who we are) and an Access Token (permission to access data).
+We will use the **[OpenID Connect Playground](https://openidconnect.net/)** to simulate a real application flow using Auth0 as an Identity Broker.
 
-### Step 1: Configure Scope
-1.  Open [Google OAuth 2.0 Playground](https://developers.google.com/oauthplayground/).
-2.  On the left, scroll (or searching) for **"Google OAuth2 API v2"**.
-3.  Select `https://www.googleapis.com/auth/userinfo.email` and `https://www.googleapis.com/auth/userinfo.profile`.
-    *   *This asks Google: "I want to access the user's email and profile".*
-4.  Click **Authorize APIs** (Blue Button).
-5.  Log in with your Google Account and "Allow" access.
+### Step 1: Configuration
+1.  Open the [OIDC Playground](https://openidconnect.net/).
+2.  Click Start button on  Redirect to OpenID Connect Server
 
-### Step 2: Exchange Code for Tokens
-1.  You will be redirected back. You now have an **Authorization Code** (Step 1 of OAuth flow complete).
-2.  Click **"Exchange authorization code for tokens"**.
-3.  You will receive:
-    *   **Refresh Token**: To get new tokens later.
-    *   **Access Token**: The key to the API.
-    *   **ID Token**: The simplified version of your profile (JWT format).
 
-### Step 3: Inspect the ID Token (JWT)
-1.  Copy the long string labeled **id_token**.
-2.  Paste it into [jwt.io](https://jwt.io).
-3.  **Analyze**:
-    *   See `iss` (Issuer): `accounts.google.com`.
-    *   See `sub`: Your unique Google User ID.
-    *   See `email`: Your email address.
-    *   *Note: This specific token proves your identity.*
-
-### Step 4: Call a Protected API
-Now let's use the **Access Token** to actually request data from Google's servers.
-
-1.  In the Playground, Step 3 is "Configure request to API".
-2.  The Request URI should be: `https://www.googleapis.com/oauth2/v2/userinfo`
-3.  Click **Send the request**.
-
-**Response Analysis**:
-```json
-{
-  "id": "112233445566778899",
-  "email": "yourname@gmail.com",
-  "verified_email": true,
-  "name": "Your Name",
-  "given_name": "Your",
-  "family_name": "Name",
-  "picture": "https://lh3.googleusercontent.com/..."
-}
-```
-
-### Step 5: Verify with CURL
-You can use the same Access Token in your terminal to prove it works outside the web browser.
-
-Copy the **Access Token** from the playground and run:
-
-```bash
-curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN_HERE" \
-     https://www.googleapis.com/oauth2/v2/userinfo
-```
-
-*   **Result**: You get the same JSON response.
-*   **Note**: Access tokens expire (usually in 1 hour). If it fails, refresh the token in the playground.
+### Step 2: The Authentication Flow
+1.  Choose a login method (e.g., Google or GitHub).
+2.  After logging in, you are redirected back with an `authorization_code`.
+3.  Click **Exchange** to swap the code for tokens.
+4.  Click **Verify/View Output** to see the ID Token and Access Token.
 
 ---
 
-## 5. Summary Flow
+## 5. Understanding the Roles (The Brokered Flow)
+
+In this lab, Auth0 act as a **broker**. It sits between the Playground and social providers (like Google).
+
+### 5.1 OAuth Roles Mapping
+
+| Role | Actor in Lab | Description |
+| :--- | :--- | :--- |
+| **Resource Owner** | You | The human logging in. |
+| **Client** | OIDC Playground | The app requesting your identity. |
+| **Authorization Server** | Auth0 | Issues tokens and validates the client. |
+| **Resource Server** | Auth0 /userinfo | The API providing user profile data. |
+
+### 5.2 Brokered Auth Diagram
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant App (Client)
-    participant Google (Auth Server)
-    participant GoogleAPI (Resource Server)
+    participant App (OIDC Playground)
+    participant Auth0 (Identity Broker)
+    participant Google (Social Provider)
 
-    User->>App: Click "Log in with Google"
-    App->>Google: Redirect with Scopes (email, profile)
-    Google->>User: "Allow App to access your info?"
+    User->>App: Click "Authenticate"
+    App->>Auth0: Redirect to /authorize
+    Auth0-->>User: Show Social Login buttons (Google/FB)
+    User->>Auth0: Select "Continue with Google"
+    Auth0->>Google: Redirect to Google Login
+    Google-->>User: "Allow Auth0 to access your info?"
     User->>Google: Yes
-    Google->>App: Authorization Code
-    App->>Google: Exchange Code for Tokens
-    Google->>App: ID Token (JWT) + Access Token
-    
-    Note right of App: App validates ID Token (OIDC)<br/>to know WHO the user is.
-
-    App->>GoogleAPI: GET /userinfo<br/>Header: Authorization: Bearer {Access Token}
-    GoogleAPI-->>App: JSON {email: "bob@gmail.com", ...}
+    Google->>Auth0: Auth Code
+    Auth0->>Google: Exchange Code for Google Tokens
+    Auth0->>App: Redirect with Auth0 Code
+    App->>Auth0: POST /oauth/token (with client_secret)
+    Auth0->>App: ID Token + Access Token
 ```
+
+---
+
+## 6. Security Lab: The "Visible" Secret
+
+### Exercise: The Mystery of the Client Secret
+In Step 2, you saw the `client_secret` being sent in a POST request to `/oauth/token`.
+
+**Question**: If this were a React or Angular Single Page App (SPA), should you include the `client_secret` in the code?
+
+<details>
+<summary>Click to see Answer</summary>
+
+**NO.**
+1.  **Browser is Public**: Anything in frontend code is visible to anyone via "View Source" or DevTools.
+2.  **The Fix (PKCE)**: Modern browser apps use **PKCE** (Proof Key for Code Exchange) instead of a secret.
+3.  **Confidential vs Public**:
+    *   **Confidential Clients** (Backend servers): Use `client_secret`.
+    *   **Public Clients** (Browsers/Mobile): Use PKCE.
+</details>
+
+---
+
+## 7. Summary Comparison
+
+| Protocol | Purpose | Key Characteristic | Analogy |
+| :--- | :--- | :--- | :--- |
+| **OAuth2** | Authorization | Delegates access to data. | Valet Key |
+| **OIDC** | Authentication | Proves identity (who am I?). | ID Card |
+| **JWT** | Data Format | Portable, signed container. | Sealed Envelope |
+
+---
+
+> [!TIP]
+> **Key Takeaway**: Treat `client_secret` like a password. Only servers should hold it. If you're building a web frontend, use **PKCE** to keep your app secure!
