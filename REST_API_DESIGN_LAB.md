@@ -454,6 +454,15 @@ erDiagram
 }
 ```
 
+#### Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| `PATCH /rides/{id}/accept` | Uses a verb-like action for a state transition on a resource. |
+| Separate `Passenger` and `Driver` | Although both are users, they have distinct behaviors and attributes (e.g., driver ratings, vehicle info). |
+| `POST /rides/{id}/ratings` | Allows multiple ratings per ride (one from passenger, one from driver). |
+| Nested `/passengers/{id}/rides` | Clearly defines ownership of the ride history. |
+
 </details>
 
 ---
