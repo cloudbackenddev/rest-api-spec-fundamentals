@@ -16,7 +16,16 @@ The primary way a server controls caching is via the `Cache-Control` header.
 | `private` | Can only be cached by the end-user's browser (e.g., user-specific profile data). |
 
 ### The Validator: ETag (Entity Tag)
-An **ETag** is a unique fingerprint (hash) of the resource.
+**What is an ETag?**
+An **ETag** (Entity Tag) is an HTTP response header that acts as a unique identifier for a specific version of a resource. Think of it as a **fingerprint** or a **hash** of the file's contents.
+*   If the content changes (even a single byte), the ETag **must** change.
+*   It allows the server to identify if the client's cached copy is still up-to-date without sending the whole file.
+
+**Strong vs. Weak ETags:**
+*   **Strong ETag** (e.g., `"686897696a7c876b7e"`): Guarantees the response is byte-for-byte identical.
+*   **Weak ETag** (e.g., `W/"686897696a7c876b7e"`): Guarantees the response is semantically equivalent (e.g., same JSON data, different whitespace), but might not be byte-for-byte identical.
+
+**The Workflow:**
 1.  Server sends `ETag: "v1-hash"` with the response.
 2.  Browser saves the response + ETag.
 3.  Next time, browser sends `If-None-Match: "v1-hash"` to ask: *"Do you have a newer version than this?"*

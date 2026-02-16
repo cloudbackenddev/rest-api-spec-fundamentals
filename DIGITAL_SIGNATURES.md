@@ -298,3 +298,152 @@ Look for the **Issuer** and **Subject** fields. In a self-signed certificate, th
 **Bonus Challenge**:
 Find the command to view the "Modulus" (Public Key) of both the Private Key and the Certificate. They should match.
 *Hint: `openssl rsa -noout -modulus -in ...` and `openssl x509 -noout -modulus -in ...`*
+
+---
+
+## Appendix A: Implementing a Simple HTTPS Server in Plain Java
+
+This appendix demonstrates how to use the concepts of self-signed certificates in a real Java application. We will create a simple HTTP server that runs over HTTPS, using a self-signed certificate we generate.
+
+### Step 1: Generate a Keystore & Self-Signed Certificate
+Java uses a **Keystore** (usually a `.p12` or `.jks` file) to store private keys and certificates. 
+
+**Important Note**: In this example, we are NOT creating a Certificate Signing Request (CSR) and we are NOT sending it to a Certificate Authority (CA). The `keytool -genkeypair` command generates a private key and immediately creates a corresponding public certificate that is **self-signed**. The certificate acts as its own CA.
+
+Run this command in your terminal:
+
+```bash
+keytool -genkeypair -alias my-self-signed -keyalg RSA -keysize 2048 -storetype PKCS12 -keystore my-keystore.p12 -validity 365 -storepass password -dname "CN=localhost, OU=Dev, O=MyOrg, L=City, S=State, C=US"
+```
+*   `-genkeypair`: Generates a key pair (public and private keys).
+*   `-alias`: A name to identify this entry in the keystore.
+*   `-keystore`: The name of the keystore file to create.
+*   `-storepass`: The password to protect the keystore (we are using "password" for simplicity).
+*   `-dname`: Specifies the "Distinguished Name". **CN=localhost** is critical because we will connect to `https://localhost`.
+
+### Step 2: Export the Certificate
+To use this certificate with tools like `curl`, we need to export the public certificate from the keystore into a file.
+
+```bash
+keytool -exportcert -alias my-self-signed -keystore my-keystore.p12 -storepass password -rfc -file my-cert.pem
+```
+*   `-exportcert`: Exports the certificate.
+*   `-rfc`: Outputs in PEM format (readable text format starting with `-----BEGIN CERTIFICATE-----`).
+*   `-file`: The output file name.
+
+### Step 3: The Java HTTPS Server Code 
+Create a file named `SimpleHttpsServer.java` with the following content. This code loads the keystore and starts an HTTPS server on port 8443.
+
+```java
+import com.sun.net.httpserver.HttpsServer;
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsParameters;
+import java.io.FileInputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.security.KeyStore;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.TrustManagerFactory;
+
+public class SimpleHttpsServer {
+
+    public static void main(String[] args) throws Exception {
+        // 1. Load the Keystore
+        char[] password = "password".toCharArray();
+        KeyStore ks = KeyStore.getInstance("PKCS12");
+        try (FileInputStream fis = new FileInputStream("my-keystore.p12")) {
+            ks.load(fis, password);
+        }
+
+        // 2. Initialize Key Manager (to use our Private Key)
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+        kmf.init(ks, password);
+
+        // 3. Initialize SSL Context
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(kmf.getKeyManagers(), null, null);
+
+        // 4. Create the HTTPS Server
+        HttpsServer server = HttpsServer.create(new InetSocketAddress(8443), 0);
+        server.setHttpsConfigurator(new HttpsConfigurator(sslContext) {
+            public void configure(HttpsParameters params) {
+                try {
+                    // Initialize the SSL context for this HttpsParameters
+                    SSLContext c = getSSLContext();
+                    SSLEngine engine = c.createSSLEngine();
+                    params.setNeedClientAuth(false);
+                    params.setCipherSuites(engine.getEnabledCipherSuites());
+                    params.setProtocols(engine.getEnabledProtocols());
+
+                    // Get the default parameters
+                    SSLParameters defaultSSLParameters = c.getDefaultSSLParameters();
+                    params.setSSLParameters(defaultSSLParameters);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        // 5. Create a Context (Endpoint)
+        server.createContext("/", exchange -> {
+            String response = "Hello, Secure World! You have successfully connected via HTTPS.";
+            exchange.sendResponseHeaders(200, response.length());
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+        });
+
+        System.out.println("HTTPS Server started on port 8443");
+        server.start();
+    }
+}
+```
+
+**Compile and Run:**
+```bash
+javac SimpleHttpsServer.java
+java SimpleHttpsServer
+```
+
+### Step 4: Connecting with Curl (The "Self-Signed CA" Check)
+
+If you try to connect simply using `curl https://localhost:8443`, it will fail because `curl` does not trust your self-signed certificate.
+
+**The Fix:** Tell `curl` to trust your specific certificate using the `--cacert` flag.
+
+```bash
+curl --cacert my-cert.pem https://localhost:8443
+```
+*   **Result**: You should see "Hello, Secure World!..."
+
+### Step 5: Introspect with OpenSSL
+Now that the server is running, use `openssl` to connect and inspect the certificate details directly from the network.
+
+```bash
+openssl s_client -connect localhost:8443 -showcerts
+```
+Or, to verify the downloaded `my-cert.pem` precisely matches what the server is serving:
+```bash
+openssl x509 -in my-cert.pem -text -noout
+```
+
+---
+
+## Appendix B: Glossary of Common File Extensions
+
+When working with certificates, you will encounter many different file extensions. Here is a quick reference:
+
+| Extension | Name | Description |
+| :--- | :--- | :--- |
+| **.pem** | **Privacy Enhanced Mail** | The most common format. It is a Base64 encoded ASCII file containing certificates, private keys, or chains. It always starts with headers like `-----BEGIN CERTIFICATE-----`. |
+| **.crt / .cer** | **Certificate** | Usually contains a single public certificate. It can be in PEM (text) or DER (binary) format. |
+| **.key** | **Private Key** | Contains a private key. **Keep this file secure!** Usually in PEM format. |
+| **.csr** | **Certificate Signing Request** | A request sent to a CA to get a certificate signed. Contains your public key and identity info (like domain name). |
+| **.jks** | **Java KeyStore** | A proprietary Java format for storing keys and certificates. Used extensively in older Java applications. Requires a password. |
+| **.p12 / .pfx** | **PKCS#12** | A standard, portable format for storing keys and certificates (unlike JKS, which is Java-specific). It is the successor to JKS and is structurally similar (password protected container). |
+| **.der** | **Distinguished Encoding Rules** | A binary format for certificates. Not readable with a text editor. Used less frequently than PEM in web development but common in Java/Windows internals. |
+
+***Pro Tip:** You can often convert between these formats using `openssl` or `keytool`.*
